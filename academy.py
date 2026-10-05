@@ -1065,11 +1065,31 @@ async def smart_search(message: types.Message):
 # ==========================================
 # 6. ISHGA TUSHIRISH
 # ==========================================
+async def handle(request):
+    return web.Response(text="Bot is running smoothly!")
+
 async def main():
+    # 1. Baza va botni mavjud sozlamalar bilan boshlash
     await init_db()
     await bot.delete_webhook(drop_pending_updates=True)
+    
+    # 2. Render platformasi uchun kichik veb-server
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    
+    # Render taqdim etadigan PORTni olamiz
+    port = int(os.environ.get("PORT", 10000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    logger.info(f"Web server started on port {port}")
+
+    # 3. Pollingni ishga tushirish
     await dp.start_polling(bot)
 
-
-if __name__ == "__main__":
-    asyncio.run(main())
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot stopped.")
